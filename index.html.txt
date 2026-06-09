@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Derivadas Polinómicas</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 20px; max-width: 480px; width: 100%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        h1 { color: #4a148c; margin-bottom: 5px; font-size: 24px; }
+        p { color: #7f8c8d; margin-bottom: 20px; font-size: 14px; }
+        
+        .input-libre { width: 100%; padding: 15px; font-size: 20px; border: 2px solid #bdc3c7; border-radius: 12px; margin-bottom: 15px; text-align: center; outline: none; font-weight: bold; color: #333; }
+        .input-libre:focus { border-color: #667eea; }
+        
+        button { width: 100%; background: #667eea; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 18px; cursor: pointer; font-weight: bold; }
+        .result-box { margin-top: 20px; padding: 20px; background: #e8f5e9; border-radius: 12px; display: none; text-align: left; border-left: 5px solid #2e7d32; line-height: 1.7; color: #1b5e20; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📈 Derivadas de Texto Libre</h1>
+    <p>Escribe tu función completa (Ej: x^2 + 10x + 5):</p>
+    
+    <input type="text" id="funcionInput" class="input-libre" value="x^2+10x+5" placeholder="Ej: 3x^2 + 5x + 4">
+
+    <button onclick="calcularDerivadaPolinomio()">Calcular con Procedimiento</button>
+
+    <div class="result-box" id="resultadoArea">
+        <strong>Procedimiento Paso a Paso:</strong>
+        <div id="pasosMath"></div>
+    </div>
+</div>
+
+<script>
+function calcularDerivadaPolinomio() {
+    // Tomamos la ecuación y le quitamos los espacios para que no haya errores
+    let texto = document.getElementById('funcionInput').value.replace(/\s+/g, '');
+    if (!texto) return;
+
+    // Con este truco separamos la función en partes usando los signos + y -
+    let terminos = texto.match(/([+-]?[^+-]+)/g);
+    
+    let pasosHTML = `<p>Dada la función: $$f(x) = ${texto}$$</p>`;
+    pasosHTML += `<p>Derivamos cada término por separado usando las reglas básicas:</p>`;
+    pasosHTML += `<ol style="margin-left: 20px; margin-top: 10px;">`;
+    
+    let resultadoFinalPartes = [];
+
+    // Revisamos cada pedacito por separado
+    terminos.forEach((term, index) => {
+        // Guardamos el signo que tiene el término
+        let signoOriginal = term.startsWith('-') ? '-' : (index > 0 ? '+' : '');
+        let limpio = term.replace(/^[+-]/, ''); // Le quitamos el signo del inicio para trabajar limpio
+
+        // CASO 1: Términos con potencia como x^2 o 3x^4
+        if (limpio.includes('x^')) {
+            let partes = limpio.split('x^');
+            let c = partes[0] === '' ? 1 : parseFloat(partes[0]); // Si no hay número antes de x, es un 1
+            let n = parseFloat(partes[1]);
+            
+            let nuevoC = c * n;
+            let nuevoN = n - 1;
+            
+            // Si el nuevo exponente es 1, no se escribe el "^1"
+            let textoExponente = nuevoN === 1 ? 'x' : `x^{${nuevoN}}`;
+            let terminoDerivado = `${signoOriginal}${nuevoC}${textoExponente}`;
+            
+            pasosHTML += `<li>Para $$${term}$$: Multiplicamos el exponente por el coeficiente ($$${n} \\cdot ${c} = ${nuevoC}$$) y restamos 1 al exponente ($$${n} - 1 = ${nuevoN}$$) ➔ $$${terminoDerivado}$$</li>`;
+            resultadoFinalPartes.push(terminoDerivado);
+        } 
+        // CASO 2: Términos con x lineal como 10x
+        else if (limpio.includes('x')) {
+            let c = limpio.replace('x', '') === '' ? 1 : parseFloat(limpio.replace('x', ''));
+            let terminoDerivado = `${signoOriginal}${c}`;
+            
+            pasosHTML += `<li>Para $$${term}$$: La derivada de $$x$$ es 1, por lo tanto solo se conserva su coeficiente constante ➔ $$${terminoDerivado}$$</li>`;
+            resultadoFinalPartes.push(terminoDerivado);
+        } 
+        // CASO 3: Números solos como el 5
+        else {
+            pasosHTML += `<li>Para el número solo $$${term}$$: La derivada de cualquier constante numérica es siempre 0.</li>`;
+        }
+    });
+
+    pasosHTML += `</ol>`;
+    
+    // Juntamos todas las respuestas individuales para armar la solución final
+    let resultadoUnido = resultadoFinalPartes.join('');
+    // Corrección por si se juntan signos raros como +-
+    resultadoUnido = resultadoUnido.replace(/\+\-/g, '-').replace(/^\+/, '');
+
+    pasosHTML += `<br><strong>Resultado Final:</strong> $$f'(x) = ${resultadoUnido}$$`;
+
+    // Ponemos todo en la pantalla del celular y le decimos a MathJax que lo dibuje bonito
+    document.getElementById('pasosMath').innerHTML = pasosHTML;
+    document.getElementById('resultadoArea').style.display = 'block';
+    MathJax.typesetClear();
+    MathJax.typeset();
+}
+</script>
+</body>
+</html>
